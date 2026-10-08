@@ -1,0 +1,132 @@
+# GridCast
+
+**Electricity demand forecasting with a full MLOps loop.**
+
+GridCast forecasts hourly electricity demand with a gradient-boosted model, and it does
+the parts that keep a model useful over time: it backtests honestly, watches the input
+data for drift, tracks every training run in MLflow, and decides when the model should be
+retrained. It serves forecasts over a small API.
+
+> The demand data is **synthetic** but realistic (daily, weekly, and yearly shape, a
+> temperature effect, a slow trend, and noise). No private data is used.
+
+[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-blue)](.github/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+---
+
+## Why it exists
+
+Training a model once is the easy part. The hard part is keeping it good: the weather
+changes, demand patterns shift, and a model that was accurate last year quietly gets
+worse. GridCast is built around that problem. It shows the MLOps loop end to end:
+
+1. **Train** a model and **track** the run in MLflow (params, metrics, the model itself).
+2. **Backtest** over several time windows, not one lucky split.
+3. **Watch** the live data for drift.
+4. **Decide** to retrain when the error is too high or the data has drifted.
+
+## How it works
+
+```mermaid
+flowchart LR
+    A[Hourly demand<br/>+ temperature] --> B[Features<br/>calendar + lags + rolling]
+    B --> C[LightGBM model]
+    C --> D[Forecast<br/>recursive multi-step]
+    C --> E[MLflow registry]
+    A --> F[Backtest<br/>rolling origin]
+    A --> G[Drift<br/>PSI / KS]
+    F --> H{Retrain?}
+    G --> H
+```
+
+## Quickstart
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+make install
+make demo          # train, backtest, drift check, and a retrain decision
+make test          # full test suite
+make run           # serve the API on http://localhost:8000 (docs at /docs)
+```
+
+`make demo` output looks like this:
+
+```
+1) Training ...        version m_...  holdout metrics {'mae': 0.28, 'rmse': 0.36, 'mape': 0.043}
+2) Backtesting ...     backtest MAPE 0.054 over 3 folds
+3) Drift check ...     drifted=True  temperature PSI=12.43
+4) Retrain decision .. should_retrain=True  reasons=['input drift in: temperature, demand']
+```
+
+## The model
+
+The forecaster is a `LightGBM` regressor on tabular features built from the series:
+
+* **Calendar:** hour, day of week, month, weekend flag — this captures the daily and
+  weekly shape.
+* **Exogenous:** temperature.
+* **Lags:** demand 24, 48, and 168 hours ago.
+* **Rolling means:** 1-day and 1-week averages of past demand.
+
+Forecasting more than one hour ahead is **recursive**: predict the next hour, add it to
+the history, and use it to build the lags for the hour after. Metrics are MAE, RMSE, and
+MAPE.
+
+## MLOps parts
+
+| Part | Module | What it does |
+|---|---|---|
+| Registry | `registry.py` | Logs every run to MLflow (params, metrics, model artifact) |
+| Backtest | `backtest.py` | Rolling-origin: train, forecast a window, measure, roll forward |
+| Drift | `drift.py` | PSI and KS between a reference window and the current window |
+| Retrain | `retrain.py` | Flags a retrain when backtest error is high or drift is found |
+
+Drift is detected with the **Population Stability Index (PSI)**: < 0.1 no real change,
+0.1–0.25 some change, > 0.25 a big change.
+
+## The API
+
+| Method | Path | What it does |
+|---|---|---|
+| `GET` | `/health` | Liveness check |
+| `GET` | `/model` | Active model version and metrics |
+| `POST` | `/forecast` | Forecast the next N hours (`{"horizon": 48}`) |
+| `GET` | `/drift` | Drift report for the recent window vs a reference window |
+
+## Project layout
+
+```
+gridcast/
+  data.py       synthetic hourly demand + temperature
+  features.py   calendar, lag, and rolling features
+  model.py      LightGBM forecaster + recursive multi-step forecast
+  backtest.py   rolling-origin backtest
+  drift.py      PSI / KS drift detection
+  registry.py   MLflow tracking and registry
+  retrain.py    the retrain decision
+  service.py    the flow (train/forecast/drift/evaluate)
+  main.py       FastAPI endpoints
+  cli.py        train / backtest / drift / demo
+```
+
+## Testing and quality
+
+* **21 tests** cover data, features, the model, drift, backtesting, the retrain policy,
+  the MLflow registry, the service, and the API. CI requires at least 80% coverage.
+* `ruff` for lint, `bandit` and `gitleaks` for security.
+
+See [`docs/architecture.md`](docs/architecture.md), the [ADRs](docs/adr/), and the Spanish
+study guide in [`docs/estudio/`](docs/estudio/).
+
+## Notes
+
+MLflow uses a local file store by default, which is fine for development and CI. In
+production you point the tracking URI at an MLflow server with a database backend. In a
+real system the temperature for future hours would come from a weather forecast; here the
+API uses a simple "same hour last week" value for the future.
+
+## License
+
+[MIT](LICENSE) © Angelo David Padilla Romero
