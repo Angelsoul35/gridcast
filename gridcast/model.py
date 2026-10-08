@@ -122,8 +122,10 @@ class DemandForecaster:
             raise RuntimeError("model is not trained or loaded")
 
         work = pd.concat(
-            [history[["timestamp", "temperature", TARGET]].copy(),
-             future[["timestamp", "temperature"]].assign(**{TARGET: np.nan})],
+            [
+                history[["timestamp", "temperature", TARGET]].copy(),
+                future[["timestamp", "temperature"]].assign(**{TARGET: np.nan}),
+            ],
             ignore_index=True,
         )
         work = add_calendar(work)

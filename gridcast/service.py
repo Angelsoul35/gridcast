@@ -64,14 +64,17 @@ class GridCastService:
         reference = self.series.iloc[: len(self.series) // 2]
         current = current if current is not None else self.series.iloc[-168 * 4 :]
         report = detect_drift(
-            reference, current, features=["temperature", "demand"],
+            reference,
+            current,
+            features=["temperature", "demand"],
             threshold=self.settings.drift_psi_threshold,
         )
         return report.as_dict()
 
     def evaluate(self, n_folds: int = 3, horizon: int = 168) -> dict:
-        backtest = rolling_backtest(self.series, n_folds=n_folds, horizon=horizon,
-                                    params={"n_estimators": 200})
+        backtest = rolling_backtest(
+            self.series, n_folds=n_folds, horizon=horizon, params={"n_estimators": 200}
+        )
         drift_dict = self.check_drift()
         # Rebuild a DriftReport-like object for the decision from the dict.
         from .drift import DriftReport, FeatureDrift

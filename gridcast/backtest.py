@@ -65,8 +65,13 @@ def rolling_backtest(
         rmses.append(f_rmse)
         mapes.append(f_mape)
         result.folds.append(
-            {"fold": fold, "cut": str(df.iloc[cut]["timestamp"]),
-             "mae": round(f_mae, 4), "rmse": round(f_rmse, 4), "mape": round(f_mape, 4)}
+            {
+                "fold": fold,
+                "cut": str(df.iloc[cut]["timestamp"]),
+                "mae": round(f_mae, 4),
+                "rmse": round(f_rmse, 4),
+                "mape": round(f_mape, 4),
+            }
         )
 
     result.mae = float(np.mean(maes)) if maes else 0.0

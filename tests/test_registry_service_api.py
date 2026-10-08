@@ -8,9 +8,7 @@ from gridcast.service import GridCastService
 
 
 def _service(series, tmp_settings):
-    return GridCastService(
-        settings=tmp_settings, series=series, train_params={"n_estimators": 60}
-    )
+    return GridCastService(settings=tmp_settings, series=series, train_params={"n_estimators": 60})
 
 
 def test_registry_logs_and_lists(series, tmp_path):

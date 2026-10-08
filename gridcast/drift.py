@@ -72,8 +72,12 @@ class DriftReport:
             "drifted": self.drifted,
             "threshold": self.threshold,
             "features": [
-                {"feature": f.feature, "psi": round(f.psi, 4), "ks": round(f.ks, 4),
-                 "drifted": f.drifted}
+                {
+                    "feature": f.feature,
+                    "psi": round(f.psi, 4),
+                    "ks": round(f.ks, 4),
+                    "drifted": f.drifted,
+                }
                 for f in self.features
             ],
         }

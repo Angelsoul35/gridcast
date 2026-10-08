@@ -44,9 +44,8 @@ def make_demand_series(
     temperature = _temperature(index, rng)
 
     # Daily demand shape: two peaks (morning, evening), low overnight.
-    daily_shape = (
-        0.6 * np.sin(2 * np.pi * (hour - 8) / 24.0)
-        + 0.4 * np.sin(2 * np.pi * (hour - 19) / 12.0)
+    daily_shape = 0.6 * np.sin(2 * np.pi * (hour - 8) / 24.0) + 0.4 * np.sin(
+        2 * np.pi * (hour - 19) / 12.0
     )
     weekly = np.where(dow >= 5, -0.25, 0.0)  # weekends lower
     yearly = 0.15 * np.sin(2 * np.pi * (day_of_year - 15) / 365.0)
@@ -58,8 +57,7 @@ def make_demand_series(
     base_load = 5.0
 
     demand = (
-        base_load
-        * (1.0 + 0.35 * daily_shape + weekly + yearly + trend)
+        base_load * (1.0 + 0.35 * daily_shape + weekly + yearly + trend)
         + temp_effect
         + rng.normal(0, 0.15, size=periods)
     )

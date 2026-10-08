@@ -32,8 +32,9 @@ def cmd_train(args) -> None:
 
 def cmd_backtest(args) -> None:
     df = make_demand_series(days=args.days, seed=args.seed)
-    result = rolling_backtest(df, n_folds=args.folds, horizon=args.horizon,
-                              params={"n_estimators": 200})
+    result = rolling_backtest(
+        df, n_folds=args.folds, horizon=args.horizon, params={"n_estimators": 200}
+    )
     print(json.dumps(result.as_dict(), indent=2))
 
 
@@ -59,8 +60,7 @@ def cmd_demo(args) -> None:
     drifted = GridCastService.drifted_series()
     half = len(drifted) // 2
     drift_report = detect_drift(drifted.iloc[:half], drifted.iloc[half:], ["temperature", "demand"])
-    print(f"   drifted={drift_report.drifted}  "
-          f"temperature PSI={drift_report.features[0].psi:.3f}")
+    print(f"   drifted={drift_report.drifted}  temperature PSI={drift_report.features[0].psi:.3f}")
 
     print("4) Retrain decision ...")
     decision = decide(bt.mape, drift_report, get_settings().retrain_mape_threshold)
