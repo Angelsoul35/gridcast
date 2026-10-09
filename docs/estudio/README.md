@@ -21,5 +21,5 @@ make test     # 21 pruebas
 ```
 
 El concepto central: **pronosticar la demanda eléctrica y mantener el modelo bueno en el
-tiempo** — con backtesting honesto, detección de drift, seguimiento en MLflow y una regla
+tiempo** — con backtesting de origen móvil, detección de drift, seguimiento en MLflow y una regla
 clara para reentrenar.
